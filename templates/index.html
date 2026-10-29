@@ -1,0 +1,14 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Mini AI Business Intelligence Assistant</title>
+<style>body{font-family:Arial,sans-serif;max-width:900px;margin:35px auto;padding:0 16px;color:#222}h1{color:#183b56}.box{border:1px solid #ddd;border-radius:10px;padding:18px;margin:16px 0}input{width:72%;padding:12px;font-size:16px}button{padding:12px 18px;cursor:pointer}table{border-collapse:collapse;width:100%;margin-top:12px}th,td{border:1px solid #ddd;padding:9px;text-align:left}th{background:#f2f5f7}pre{white-space:pre-wrap;overflow-wrap:anywhere}.muted{color:#555}</style></head>
+<body><h1>Mini AI Business Intelligence Assistant</h1><p class="muted">Ask questions about the supplied sales data. Results are calculated from SQLite.</p>
+<div class="box"><label for="question"><strong>Your question</strong></label><p><input id="question" placeholder="e.g. Which product generated the highest revenue?" value="What is the total revenue?"><button id="ask">Ask</button></p>
+<p class="muted">Examples: total revenue; highest-revenue product; monthly revenue trend; highest-sales region; compare January and February.</p></div>
+<div class="box" id="result" aria-live="polite">Your answer will appear here.</div>
+<script>
+const btn=document.getElementById('ask'), input=document.getElementById('question'), result=document.getElementById('result');
+function escapeHtml(s){return String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
+function renderTable(rows){if(!Array.isArray(rows)||!rows.length)return '';const keys=Object.keys(rows[0]);return '<table><thead><tr>'+keys.map(k=>'<th>'+escapeHtml(k)+'</th>').join('')+'</tr></thead><tbody>'+rows.map(r=>'<tr>'+keys.map(k=>'<td>'+escapeHtml(r[k]??'')+'</td>').join('')+'</tr>').join('')+'</tbody></table>';}
+async function ask(){const question=input.value.trim();if(!question){result.textContent='Please enter a question.';return;}btn.disabled=true;result.textContent='Working…';try{const response=await fetch('/api/ask',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({question})});const data=await response.json();if(!response.ok){result.innerHTML='<strong>Error:</strong> '+escapeHtml(data.error||'Request failed');return;}result.innerHTML='<h2>Answer</h2><p>'+escapeHtml(data.answer)+'</p><h3>Supporting data</h3>'+renderTable(Array.isArray(data.data)?data.data:(data.data?[data.data]:[]))+'<p class="muted">'+escapeHtml(data.policy||'')+'</p>';}catch(e){result.textContent='Could not connect to the application. Check that the Flask server is running.';}finally{btn.disabled=false;}}
+btn.addEventListener('click',ask);input.addEventListener('keydown',e=>{if(e.key==='Enter')ask();});
+</script></body></html>
